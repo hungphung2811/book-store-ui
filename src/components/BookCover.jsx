@@ -2,17 +2,20 @@ import { useState } from 'react'
 
 const palette = ['bg-brand', 'bg-pink-300', 'bg-sky-300', 'bg-green-300', 'bg-orange-300', 'bg-violet-300']
 
+// book: { title, author, coverImageUrl }. Không có ảnh (hoặc ảnh lỗi) thì dùng bìa màu theo chữ cái đầu.
 export default function BookCover({ book, className = '' }) {
   const [failed, setFailed] = useState(false)
-  const color = palette[Number(book.id) % palette.length]
+  const title = book.title || book.titleName || '?'
+  const color = palette[(title.codePointAt(0) || 0) % palette.length]
 
-  if (book.cover && !failed) {
+  if (book.coverImageUrl && !failed) {
     return (
       <div className={`aspect-[3/4] overflow-hidden border-2 border-ink bg-white ${className}`}>
         <img
-          src={book.cover}
-          alt={`Bìa sách ${book.title}`}
+          src={book.coverImageUrl}
+          alt={`Bìa sách ${title}`}
           loading="lazy"
+          referrerPolicy="no-referrer"
           onError={() => setFailed(true)}
           className="h-full w-full object-cover"
         />
@@ -21,7 +24,7 @@ export default function BookCover({ book, className = '' }) {
   }
   return (
     <div className={`flex aspect-[3/4] flex-col justify-between overflow-hidden border-2 border-ink p-3 ${color} ${className}`}>
-      <span className="text-5xl font-bold leading-none">{book.title.charAt(0)}</span>
+      <span className="text-5xl font-bold leading-none">{title.charAt(0)}</span>
       <span className="line-clamp-3 text-sm font-bold">{book.author}</span>
     </div>
   )

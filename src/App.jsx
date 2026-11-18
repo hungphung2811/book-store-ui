@@ -2,11 +2,15 @@ import { useEffect } from 'react'
 import { BrowserRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import Footer from './components/Footer'
 import Navbar from './components/Navbar'
+import { AuthProvider } from './lib/auth'
+import { CartProvider } from './lib/cart'
 import BookDetail from './pages/BookDetail'
 import Books from './pages/Books'
+import Cart from './pages/Cart'
+import Checkout from './pages/Checkout'
 import Home from './pages/Home'
 import Login from './pages/Login'
-import MyRentals from './pages/MyRentals'
+import MyOrders from './pages/MyOrders'
 import NotFound from './pages/NotFound'
 import Register from './pages/Register'
 
@@ -34,18 +38,24 @@ function Layout() {
 export default function App() {
   return (
     <BrowserRouter>
-      <ScrollToTop />
-      <Routes>
-        <Route element={<Layout />}>
-          <Route path="/" element={<Home />} />
-          <Route path="/books" element={<Books />} />
-          <Route path="/books/:id" element={<BookDetail />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/my-rentals" element={<MyRentals />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
+      <AuthProvider>
+        <CartProvider>
+          <ScrollToTop />
+          <Routes>
+            <Route element={<Layout />}>
+              <Route path="/" element={<Home />} />
+              <Route path="/books" element={<Books />} />
+              <Route path="/books/:id" element={<BookDetail />} />
+              <Route path="/cart" element={<Cart />} />
+              <Route path="/checkout" element={<Checkout />} />
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/my-orders" element={<MyOrders />} />
+              <Route path="*" element={<NotFound />} />
+            </Route>
+          </Routes>
+        </CartProvider>
+      </AuthProvider>
     </BrowserRouter>
   )
 }

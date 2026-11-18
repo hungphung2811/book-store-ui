@@ -1,16 +1,19 @@
 import { useState } from 'react'
-import { Link, NavLink } from 'react-router-dom'
+import { Link, NavLink, useNavigate } from 'react-router-dom'
 import SearchBar from './SearchBar'
 import Button from './ui/Button'
-import { categories } from '../data/books'
-
-const catLink = (c) => `/books?category=${encodeURIComponent(c)}`
+import { useAuth } from '../lib/auth'
+import { useCart } from '../lib/cart'
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
-  const [catOpen, setCatOpen] = useState(false)
-  const close = () => { setOpen(false); setCatOpen(false) }
+  const { user, logout } = useAuth()
+  const { count } = useCart()
+  const navigate = useNavigate()
+  const close = () => setOpen(false)
   const topLink = 'rounded-brutal border-2 border-transparent px-3 py-1 font-bold hover:border-ink hover:bg-brand/40'
+  const signOut = async () => { close(); await logout(); navigate('/') }
+  const cartLabel = `Giỏ hàng${count ? ` (${count})` : ''}`
 
   return (
     <header className="sticky top-0 z-40 border-b-2 border-ink bg-white">
@@ -20,9 +23,19 @@ export default function Navbar() {
         </Link>
         <SearchBar className="hidden flex-1 md:flex" />
         <div className="ml-auto hidden items-center gap-2 md:flex">
-          <NavLink to="/my-rentals" className={topLink}>Sách của tôi</NavLink>
-          <Button as={Link} to="/login" variant="secondary">Đăng nhập</Button>
-          <Button as={Link} to="/register">Đăng ký</Button>
+          <NavLink to="/cart" className={topLink}>{cartLabel}</NavLink>
+          {user ? (
+            <>
+              <NavLink to="/my-orders" className={topLink}>Đơn hàng</NavLink>
+              <span className="max-w-32 truncate text-sm font-medium" title={user.username}>{user.username}</span>
+              <Button variant="secondary" onClick={signOut}>Đăng xuất</Button>
+            </>
+          ) : (
+            <>
+              <Button as={Link} to="/login" variant="secondary">Đăng nhập</Button>
+              <Button as={Link} to="/register">Đăng ký</Button>
+            </>
+          )}
         </div>
         <button
           type="button"
@@ -35,55 +48,36 @@ export default function Navbar() {
         </button>
       </div>
 
-      {/* Desktop category bar */}
       <nav className="hidden border-t-2 border-ink bg-brand md:block" aria-label="Danh mục">
         <div className="mx-auto flex max-w-6xl items-center gap-1 px-4 py-2">
-          <div className="relative" onMouseLeave={() => setCatOpen(false)}>
-            <button
-              type="button"
-              aria-expanded={catOpen}
-              onClick={() => setCatOpen((o) => !o)}
-              onMouseEnter={() => setCatOpen(true)}
-              className="rounded-brutal border-2 border-ink bg-white px-3 py-1 font-bold shadow-brutal-sm"
-            >
-              ☰ Thể loại ▾
-            </button>
-            {catOpen && (
-              <div className="absolute left-0 top-full z-50 w-56 pt-1">
-                <ul className="rounded-brutal border-2 border-ink bg-white shadow-brutal">
-                  {categories.map((c) => (
-                    <li key={c}>
-                      <Link to={catLink(c)} onClick={close} className="block px-4 py-2 font-medium hover:bg-brand">{c}</Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
           <Link to="/books" className={topLink}>Tất cả sách</Link>
-          <Link to="/books?sort=hot" className={topLink}>Sách hot</Link>
-          <Link to="/books?sort=new" className={topLink}>Sách mới</Link>
-          {categories.slice(0, 4).map((c) => <Link key={c} to={catLink(c)} className={topLink}>{c}</Link>)}
+          <Link to="/books?sort=newest" className={topLink}>Sách mới</Link>
+          <Link to="/books?sort=price_asc" className={topLink}>Giá thấp đến cao</Link>
+          <Link to="/books?inStock=true" className={topLink}>Còn hàng</Link>
         </div>
       </nav>
 
-      {/* Mobile menu */}
       {open && (
         <nav className="flex max-h-[80vh] flex-col gap-3 overflow-y-auto border-t-2 border-ink bg-white p-4 md:hidden">
           <SearchBar onDone={close} />
           <div className="flex flex-wrap gap-2" onClick={close}>
-            <Link to="/books?sort=hot" className="rounded-brutal border-2 border-ink bg-brand px-3 py-1 font-bold">Sách hot</Link>
-            <Link to="/books?sort=new" className="rounded-brutal border-2 border-ink bg-brand px-3 py-1 font-bold">Sách mới</Link>
             <Link to="/books" className="rounded-brutal border-2 border-ink px-3 py-1 font-bold">Tất cả sách</Link>
-          </div>
-          <p className="text-sm font-bold">Thể loại</p>
-          <div className="flex flex-wrap gap-2" onClick={close}>
-            {categories.map((c) => <Link key={c} to={catLink(c)} className="rounded-brutal border-2 border-ink px-3 py-1 text-sm font-medium">{c}</Link>)}
+            <Link to="/books?sort=newest" className="rounded-brutal border-2 border-ink bg-brand px-3 py-1 font-bold">Sách mới</Link>
+            <Link to="/books?inStock=true" className="rounded-brutal border-2 border-ink px-3 py-1 font-bold">Còn hàng</Link>
           </div>
           <div className="flex flex-col gap-2 border-t-2 border-ink pt-3" onClick={close}>
-            <Link to="/my-rentals" className="font-bold">Sách của tôi</Link>
-            <Button as={Link} to="/login" variant="secondary">Đăng nhập</Button>
-            <Button as={Link} to="/register">Đăng ký</Button>
+            <Link to="/cart" className="font-bold">{cartLabel}</Link>
+            {user ? (
+              <>
+                <Link to="/my-orders" className="font-bold">Đơn hàng</Link>
+                <Button variant="secondary" onClick={signOut}>Đăng xuất ({user.username})</Button>
+              </>
+            ) : (
+              <>
+                <Button as={Link} to="/login" variant="secondary">Đăng nhập</Button>
+                <Button as={Link} to="/register">Đăng ký</Button>
+              </>
+            )}
           </div>
         </nav>
       )}
