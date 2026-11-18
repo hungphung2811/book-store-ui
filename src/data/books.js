@@ -1,7 +1,27 @@
 export const categories = ['Văn học', 'Kinh tế', 'Kỹ năng', 'Thiếu nhi', 'Khoa học', 'Lịch sử']
 
-const desc =
-  'Một cuốn sách được nhiều độc giả yêu thích, với nội dung cuốn hút, dễ đọc và để lại nhiều suy ngẫm sau từng chương. Phù hợp để đọc vào cuối tuần hoặc trên đường đi làm.'
+const descriptions = [
+  'Hành trình của chú dế mèn từ cái hang nhỏ ra thế giới rộng lớn, đầy bạn bè và bài học về lòng dũng cảm.',
+  'Câu chuyện về cậu bé chăn cừu đi tìm kho báu và học cách lắng nghe trái tim mình.',
+  'Những nguyên tắc ứng xử kinh điển giúp bạn kết bạn, thuyết phục và tạo ảnh hưởng với người khác.',
+  'Lược sử loài người, từ thời săn bắt hái lượm đến kỷ nguyên công nghệ, dưới góc nhìn đầy bất ngờ.',
+  'Hai người cha, hai cách nghĩ về tiền bạc, và bài học tài chính cá nhân mà trường lớp ít khi dạy.',
+  'Tuổi thơ miền quê với những rung động đầu đời, nhẹ nhàng và đầy hoài niệm.',
+  'Từ Vụ Nổ Lớn đến hố đen, giải thích những bí ẩn của vũ trụ bằng ngôn ngữ dễ hiểu.',
+  'Chuyện về hoàng tử nhỏ đến từ tinh cầu xa xôi, một lời nhắc dịu dàng về điều thực sự quan trọng.',
+  'Hai hệ thống tư duy chi phối quyết định của chúng ta và cách nhận ra những cái bẫy trong đầu.',
+  'Vì sao các nền văn minh phát triển không đều nhau? Một cái nhìn rộng về địa lý, vi trùng và công nghệ.',
+  'Tiểu thuyết trào phúng sắc sảo về xã hội thành thị đầu thế kỷ XX, đọc là bật cười rồi ngẫm.',
+  'Những nguyên lý về tư duy và kỷ luật của hàng trăm người thành đạt, được đúc kết thành các bước cụ thể.',
+  'Hawking dẫn dắt người đọc qua thuyết tương đối, cơ học lượng tử và những câu hỏi lớn của vật lý.',
+  'Hai mạch truyện đan xen giữa thực và mơ, về một cậu bé bỏ nhà đi và những điều kỳ lạ trên đường.',
+  'Cách những thay đổi nhỏ mỗi ngày cộng dồn thành kết quả lớn, kèm khung xây dựng và bỏ thói quen.',
+  'Tóm lược dòng chảy lịch sử dân tộc từ buổi đầu dựng nước, ngắn gọn và dễ theo dõi.',
+  'Câu chuyện về di truyền học, từ Mendel đến chỉnh sửa gen, đan xen với lịch sử một gia đình.',
+  'Gia tộc mafia Corleone và cái giá của quyền lực, danh dự và lòng trung thành.',
+  'Vì sao một số công ty vượt lên hẳn những đối thủ cùng ngành? Kết quả từ nghiên cứu nhiều năm.',
+  'Cô bé nghịch ngợm và ngôi trường có toa tàu làm lớp học, nơi mỗi đứa trẻ được tôn trọng.',
+]
 
 const raw = [
   ['Dế Mèn phiêu lưu ký', 'Tô Hoài', 'Thiếu nhi', 3000, true],
@@ -39,7 +59,7 @@ export const books = raw.map(([title, author, category, pricePerDay, featured], 
   title,
   author,
   category,
-  description: desc,
+  description: descriptions[i],
   pricePerDay,
   featured,
   cover: isbns[i] ? `https://covers.openlibrary.org/b/isbn/${isbns[i]}-L.jpg?default=false` : null,

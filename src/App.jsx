@@ -19,13 +19,14 @@ function ScrollToTop() {
 }
 
 function Layout() {
+  const { pathname } = useLocation()
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col overflow-x-clip">
       <Navbar />
       <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">
         <Outlet />
       </main>
-      <Footer />
+      <Footer flush={pathname === '/'} />
     </div>
   )
 }

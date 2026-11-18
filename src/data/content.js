@@ -1,9 +1,8 @@
 export const ticker = [
-  'Thuê từ 3.000đ/ngày',
+  'Hơn 1.200 đầu sách',
   'Giao nhận tại thư viện hoặc tận nhà',
   'Gia hạn 1 lần miễn phí',
   'Sách được vệ sinh sau mỗi lượt thuê',
-  'Thành viên mới giảm 20% đơn đầu',
 ]
 
 export const stats = [
