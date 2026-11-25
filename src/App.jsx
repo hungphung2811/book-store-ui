@@ -1,24 +1,37 @@
 import { useEffect } from 'react'
-import { BrowserRouter, Outlet, Route, Routes, useLocation } from 'react-router-dom'
+import { BrowserRouter, Outlet, Route, Routes, useLocation, useNavigate } from 'react-router-dom'
+import AuthDialog from './components/auth/AuthDialog'
 import Footer from './components/Footer'
 import Navbar from './components/Navbar'
-import { AuthProvider } from './lib/auth'
-import { CartProvider } from './lib/cart'
 import BookDetail from './pages/BookDetail'
 import Books from './pages/Books'
 import Cart from './pages/Cart'
 import Checkout from './pages/Checkout'
 import Home from './pages/Home'
-import Login from './pages/Login'
 import MyOrders from './pages/MyOrders'
 import NotFound from './pages/NotFound'
-import Register from './pages/Register'
+import Payment from './pages/Payment'
+import { useAuth } from './lib/auth'
+import { useAuthModalStore } from './lib/stores'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [pathname])
+  return null
+}
+
+// /login và /register mở popup ngay trên trang chủ (không có trang riêng); đăng nhập xong về trang đã định (state.from) hoặc trang chủ.
+function OpenAuth({ view }) {
+  const { user } = useAuth()
+  const navigate = useNavigate()
+  const location = useLocation()
+  const from = typeof location.state?.from === 'string' && location.state.from.startsWith('/') && !location.state.from.startsWith('//') ? location.state.from : '/'
+  useEffect(() => {
+    if (user) navigate(from, { replace: true })
+    else useAuthModalStore.getState().show(view, () => navigate(from, { replace: true }))
+  }, [user, view, from, navigate])
   return null
 }
 
@@ -38,24 +51,22 @@ function Layout() {
 export default function App() {
   return (
     <BrowserRouter>
-      <AuthProvider>
-        <CartProvider>
-          <ScrollToTop />
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/" element={<Home />} />
-              <Route path="/books" element={<Books />} />
-              <Route path="/books/:id" element={<BookDetail />} />
-              <Route path="/cart" element={<Cart />} />
-              <Route path="/checkout" element={<Checkout />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              <Route path="/my-orders" element={<MyOrders />} />
-              <Route path="*" element={<NotFound />} />
-            </Route>
-          </Routes>
-        </CartProvider>
-      </AuthProvider>
+      <ScrollToTop />
+      <Routes>
+        <Route element={<Layout />}>
+          <Route path="/" element={<Home />} />
+          <Route path="/books" element={<Books />} />
+          <Route path="/books/:id" element={<BookDetail />} />
+          <Route path="/cart" element={<Cart />} />
+          <Route path="/checkout" element={<Checkout />} />
+          <Route path="/login" element={<><Home /><OpenAuth view="login" /></>} />
+          <Route path="/register" element={<><Home /><OpenAuth view="register" /></>} />
+          <Route path="/my-orders" element={<MyOrders />} />
+          <Route path="/orders/:id/payment" element={<Payment />} />
+          <Route path="*" element={<NotFound />} />
+        </Route>
+      </Routes>
+      <AuthDialog />
     </BrowserRouter>
   )
 }

@@ -1,7 +1,8 @@
 // Client cho customer-api (/public/**). Hợp đồng: docs/api/customer-api.md của hệ thống LMS.
+import { useSessionStore } from './stores'
+
 export const SHOP_CODE = (import.meta.env.VITE_SHOP_CODE || 'demo').toLowerCase()
 const BASE = (import.meta.env.VITE_API_BASE || '').replace(/\/$/, '')
-const SESSION_KEY = 'booknook.session'
 
 export class ApiError extends Error {
   constructor(status, code, message, details) {
@@ -13,23 +14,9 @@ export class ApiError extends Error {
 }
 
 // ---- phiên (bearer token, không cookie) ----
-function loadSession() {
-  try { return JSON.parse(localStorage.getItem(SESSION_KEY)) } catch { return null }
-}
-let memory = loadSession()
-const listeners = new Set()
-export function saveSession(s) {
-  try {
-    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s))
-    else localStorage.removeItem(SESSION_KEY)
-  } catch { /* trình duyệt chặn storage: phiên chỉ sống trong bộ nhớ */ }
-  memory = s
-  listeners.forEach((fn) => fn(s))
-}
-export const onSessionChange = (fn) => { listeners.add(fn); return () => listeners.delete(fn) }
-export const currentSession = () => memory
-
-const shopPath = (p) => `${BASE}/public/t/${SHOP_CODE}${p}`
+// Phiên nằm trong store zustand (stores.js), tự lưu localStorage và đồng bộ giữa các tab.
+export const currentSession = () => useSessionStore.getState().session
+export const saveSession = (s) => useSessionStore.getState().setSession(s)
 
 async function raw(url, { method = 'GET', body, token } = {}) {
   const headers = { Accept: 'application/json' }
@@ -53,12 +40,6 @@ async function raw(url, { method = 'GET', body, token } = {}) {
   return data
 }
 
-const tokens = (t) => ({
-  accessToken: t.accessToken,
-  refreshToken: t.refreshToken,
-  expiresAt: Date.now() + (t.expiresIn || 300) * 1000,
-})
-
 let refreshing = null
 function refresh() {
   const s = currentSession()
@@ -66,7 +47,13 @@ function refresh() {
   // dùng chung một lời gọi refresh khi nhiều request cùng gặp 401
   refreshing ||= raw(shopPath('/auth/refresh'), { method: 'POST', body: { refreshToken: s.refreshToken } })
     .then((t) => { saveSession({ ...s, ...tokens(t) }); return currentSession() })
-    .catch((e) => { saveSession(null); throw e })
+    .catch((e) => {
+      // Tab khác vừa xoay vòng token: dùng phiên mới họ đã lưu thay vì đăng xuất người dùng
+      const latest = currentSession()
+      if (e.code === 'REFRESH_TOKEN_SUPERSEDED' && latest && latest.refreshToken !== s.refreshToken) return latest
+      saveSession(null)
+      throw e
+    })
     .finally(() => { refreshing = null })
   return refreshing
 }
@@ -85,23 +72,20 @@ async function call(path, opts = {}) {
   }
 }
 
-const qs = (o) => {
-  const p = new URLSearchParams()
-  Object.entries(o).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '' && v !== false) p.set(k, v) })
-  const s = p.toString()
-  return s ? `?${s}` : ''
-}
-
 export const api = {
   shop: () => call(''),
   books: (q) => call(`/books${qs(q)}`),
   book: (id) => call(`/books/${id}`),
+  preview: (id) => call(`/books/${id}/preview`),
   suggestions: (q, limit = 5) => call(`/books/suggestions${qs({ q, limit })}`),
   banners: () => call('/banners'),
   async login(username, password) {
     const t = await call('/auth/login', { method: 'POST', body: { username, password } })
     saveSession({ username, ...tokens(t) })
   },
+  // Xác minh email bằng OTP 6 số (identity bật mặc định): đăng nhập khi chưa xác minh trả 403 EMAIL_NOT_VERIFIED
+  verifyEmail: (b) => call('/auth/verify-email', { method: 'POST', body: b }),
+  resendVerification: (b) => call('/auth/resend-verification', { method: 'POST', body: b }),
   signup: (b) => call('/auth/signup', { method: 'POST', body: b }),
   async logout() {
     const s = currentSession()
@@ -112,7 +96,41 @@ export const api = {
   },
   placeOrder: (b) => call('/orders', { method: 'POST', body: b, auth: true }),
   orders: (page = 0, size = 20) => call(`/orders${qs({ page, size })}`, { auth: true }),
+  // Số đơn: dùng GET /orders/count; backend chưa có endpoint này (404) thì lấy `total` của trang đơn đầu.
+  async orderCount() {
+    try {
+      return (await call('/orders/count', { auth: true })).total
+    } catch (e) {
+      if (e.status !== 404) throw e
+      return (await call(`/orders${qs({ page: 0, size: 1 })}`, { auth: true })).total
+    }
+  },
+  // 5 tác giả nổi bật (có sách mới và bán chạy 3 tháng gần nhất): [{ name }]
+  featuredAuthors: () => call('/authors/featured'),
+  // Sản phẩm nổi bật = bán chạy 3 tháng gần nhất (cùng dạng phần tử với books().items)
+  featuredBooks: () => call('/books/featured'),
+  // Thanh toán QR (SePay): lệnh thanh toán của đơn và các phương thức đang bật
+  orderPayment: (id) => call(`/orders/${id}/payment`, { auth: true }),
+  paymentOptions: () => call('/payment-options', { auth: true }),
   cancelOrder: (id, reason) => call(`/orders/${id}/cancellation`, { method: 'POST', body: reason ? { reason } : {}, auth: true }),
 }
 
 export const formatVnd = (n) => `${Number(n || 0).toLocaleString('vi-VN')}đ`
+
+// ---- Hằng số, bảng nhãn và tiện ích ----
+
+const shopPath = (p) => `${BASE}/public/t/${SHOP_CODE}${p}`
+
+const tokens = (t) => ({
+  accessToken: t.accessToken,
+  refreshToken: t.refreshToken,
+  expiresAt: Date.now() + (t.expiresIn || 300) * 1000,
+})
+
+const qs = (o) => {
+  const p = new URLSearchParams()
+  Object.entries(o).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '' && v !== false) p.set(k, v) })
+  const s = p.toString()
+  return s ? `?${s}` : ''
+}
+

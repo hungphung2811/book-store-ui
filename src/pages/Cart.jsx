@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import LoginPrompt from '../components/auth/LoginPrompt'
 import BookCover from '../components/BookCover'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
@@ -6,7 +7,9 @@ import { formatVnd } from '../lib/api'
 import { useCart } from '../lib/cart'
 
 export default function Cart() {
-  const { lines, total, setQty, remove } = useCart()
+  const { loggedIn, lines, total, setQty, remove } = useCart()
+  // Giỏ chỉ có khi đã đăng nhập
+  if (!loggedIn) return <LoginPrompt />
 
   return (
     <div className="flex flex-col gap-6">

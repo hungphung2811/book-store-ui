@@ -1,14 +1,15 @@
-import { useState } from 'react'
-import { Link, Navigate, useLocation } from 'react-router-dom'
-import { ErrorBox, Loading } from '../components/AsyncState'
+import { useEffect, useState } from 'react'
+import { Link, useLocation } from 'react-router-dom'
+import LoginPrompt from '../components/auth/LoginPrompt'
+import { ErrorBox } from '../components/AsyncState'
+import { OrdersSkeleton } from '../components/Skeleton'
 import StatusBadge, { fulfilmentLabel, methodLabel, paymentLabel } from '../components/StatusBadge'
 import Button from '../components/ui/Button'
 import Card from '../components/ui/Card'
 import { api, formatVnd } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useAsync } from '../lib/hooks'
-
-const fmt = (d) => (d ? new Date(d).toLocaleString('vi-VN') : '—')
+import { useOrderCountStore } from '../lib/stores'
 
 function Order({ order, onChanged }) {
   const [busy, setBusy] = useState(false)
@@ -41,7 +42,10 @@ function Order({ order, onChanged }) {
       </dl>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xl font-bold">Tổng: {formatVnd(order.grandTotal)}</p>
-        {order.cancellable && <Button variant="secondary" disabled={busy} onClick={cancel}>Hủy đơn</Button>}
+        <div className="flex flex-wrap gap-2">
+          {order.status === 'AWAITING_PAYMENT' && <Button as={Link} to={`/orders/${order.id}/payment`}>Thanh toán</Button>}
+          {order.cancellable && <Button variant="secondary" disabled={busy} onClick={cancel}>Hủy đơn</Button>}
+        </div>
       </div>
       {error && <p role="alert" className="font-medium text-red-600">{error}</p>}
     </Card>
@@ -55,14 +59,17 @@ export default function MyOrders() {
   const [nonce, setNonce] = useState(0)
   const { loading, data, error } = useAsync(() => (user ? api.orders(page) : Promise.resolve(null)), [user, page, nonce])
 
-  if (!user) return <Navigate to="/login" state={{ from: '/my-orders' }} replace />
+  // Giữ huy hiệu số đơn ở header khớp với danh sách vừa tải (sau đặt/hủy đơn)
+  useEffect(() => { if (data) useOrderCountStore.getState().setTotal(data.total) }, [data])
+
+  if (!user) return <LoginPrompt />
   const pages = data ? Math.ceil(data.total / data.size) : 0
 
   return (
     <div className="flex flex-col gap-6">
       <h1 className="text-4xl">Đơn hàng của tôi</h1>
       {location.state?.placed && <Card className="bg-green-200 p-4 font-bold" role="status">Đặt hàng thành công. Cửa hàng sẽ xác nhận đơn của bạn.</Card>}
-      {loading && !data ? <Loading /> : error ? <ErrorBox error={error} onRetry={() => setNonce((n) => n + 1)} /> : data.items.length === 0 ? (
+      {loading && !data ? <OrdersSkeleton /> : error ? <ErrorBox error={error} onRetry={() => setNonce((n) => n + 1)} /> : data.items.length === 0 ? (
         <Card className="flex flex-col items-center gap-4 p-10 text-center">
           <p className="text-xl font-bold">Bạn chưa có đơn hàng nào</p>
           <Button as={Link} to="/books">Đến kho sách</Button>
@@ -82,3 +89,7 @@ export default function MyOrders() {
     </div>
   )
 }
+
+// ---- Hằng số, bảng nhãn và tiện ích ----
+
+const fmt = (d) => (d ? new Date(d).toLocaleString('vi-VN') : '—')

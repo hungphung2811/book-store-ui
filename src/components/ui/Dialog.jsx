@@ -28,7 +28,7 @@ export default function Dialog({ open, onClose, title, children }) {
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
-        className="w-full max-w-md rounded-brutal border-2 border-ink bg-white p-6 shadow-brutal outline-none"
+        className="max-h-[90vh] w-full max-w-md overflow-y-auto rounded-brutal border-2 border-ink bg-white p-6 shadow-brutal outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         {title && <h2 id={titleId} className="mb-4 break-words text-xl">{title}</h2>}

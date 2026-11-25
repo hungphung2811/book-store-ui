@@ -1,6 +1,5 @@
 import { useState } from 'react'
 
-const palette = ['bg-brand', 'bg-pink-300', 'bg-sky-300', 'bg-green-300', 'bg-orange-300', 'bg-violet-300']
 
 // book: { title, author, coverImageUrl }. Không có ảnh (hoặc ảnh lỗi) thì dùng bìa màu theo chữ cái đầu.
 export default function BookCover({ book, className = '' }) {
@@ -29,3 +28,7 @@ export default function BookCover({ book, className = '' }) {
     </div>
   )
 }
+
+// ---- Hằng số, bảng nhãn và tiện ích ----
+
+const palette = ['bg-brand', 'bg-pink-300', 'bg-sky-300', 'bg-green-300', 'bg-orange-300', 'bg-violet-300']

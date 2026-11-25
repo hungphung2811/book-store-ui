@@ -1,19 +1,46 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, NavLink, useNavigate } from 'react-router-dom'
 import SearchBar from './SearchBar'
 import Button from './ui/Button'
+import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useCart } from '../lib/cart'
+import { useAuthModalStore, useOrderCountStore } from '../lib/stores'
+
+// Nhãn kèm huy hiệu số; ẩn huy hiệu khi 0 hoặc chưa biết.
+function Labeled({ text, n }) {
+  const show = n > 0
+  return (
+    <span className="inline-flex items-center gap-1.5">
+      {text}
+      {show && <span aria-label={`${n} mục`} className="min-w-5 rounded-full border-2 border-ink bg-brand px-1.5 text-center text-xs leading-4">{n > 99 ? '99+' : n}</span>}
+    </span>
+  )
+}
 
 export default function Navbar() {
   const [open, setOpen] = useState(false)
   const { user, logout } = useAuth()
   const { count } = useCart()
+  const orderTotal = useOrderCountStore((s) => s.total)
   const navigate = useNavigate()
+  const showAuth = useAuthModalStore((s) => s.show)
   const close = () => setOpen(false)
   const topLink = 'rounded-brutal border-2 border-transparent px-3 py-1 font-bold hover:border-ink hover:bg-brand/40'
   const signOut = async () => { close(); await logout(); navigate('/') }
-  const cartLabel = `Giỏ hàng${count ? ` (${count})` : ''}`
+  const username = user?.username
+
+  // Số đơn của khách (huy hiệu). Lỗi thì bỏ qua, không hiện số.
+  useEffect(() => {
+    const { setTotal } = useOrderCountStore.getState()
+    if (!username) { setTotal(null); return }
+    let alive = true
+    api.orderCount().then((n) => alive && setTotal(n), () => {})
+    return () => { alive = false }
+  }, [username])
+
+  const cartLabel = <Labeled text="Giỏ hàng" n={count} />
+  const ordersLabel = <Labeled text="Đơn hàng" n={orderTotal} />
 
   return (
     <header className="sticky top-0 z-40 border-b-2 border-ink bg-white">
@@ -23,17 +50,17 @@ export default function Navbar() {
         </Link>
         <SearchBar className="hidden flex-1 md:flex" />
         <div className="ml-auto hidden items-center gap-2 md:flex">
-          <NavLink to="/cart" className={topLink}>{cartLabel}</NavLink>
           {user ? (
             <>
-              <NavLink to="/my-orders" className={topLink}>Đơn hàng</NavLink>
+              <NavLink to="/cart" className={topLink}>{cartLabel}</NavLink>
+              <NavLink to="/my-orders" className={topLink}>{ordersLabel}</NavLink>
               <span className="max-w-32 truncate text-sm font-medium" title={user.username}>{user.username}</span>
               <Button variant="secondary" onClick={signOut}>Đăng xuất</Button>
             </>
           ) : (
             <>
-              <Button as={Link} to="/login" variant="secondary">Đăng nhập</Button>
-              <Button as={Link} to="/register">Đăng ký</Button>
+              <Button variant="secondary" onClick={() => { close(); showAuth('login') }}>Đăng nhập</Button>
+              <Button onClick={() => { close(); showAuth('register') }}>Đăng ký</Button>
             </>
           )}
         </div>
@@ -66,16 +93,16 @@ export default function Navbar() {
             <Link to="/books?inStock=true" className="rounded-brutal border-2 border-ink px-3 py-1 font-bold">Còn hàng</Link>
           </div>
           <div className="flex flex-col gap-2 border-t-2 border-ink pt-3" onClick={close}>
-            <Link to="/cart" className="font-bold">{cartLabel}</Link>
             {user ? (
               <>
-                <Link to="/my-orders" className="font-bold">Đơn hàng</Link>
+                <Link to="/cart" className="font-bold">{cartLabel}</Link>
+                <Link to="/my-orders" className="font-bold">{ordersLabel}</Link>
                 <Button variant="secondary" onClick={signOut}>Đăng xuất ({user.username})</Button>
               </>
             ) : (
               <>
-                <Button as={Link} to="/login" variant="secondary">Đăng nhập</Button>
-                <Button as={Link} to="/register">Đăng ký</Button>
+                <Button variant="secondary" onClick={() => { close(); showAuth('login') }}>Đăng nhập</Button>
+                <Button onClick={() => { close(); showAuth('register') }}>Đăng ký</Button>
               </>
             )}
           </div>
